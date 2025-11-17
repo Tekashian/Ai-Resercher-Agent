@@ -23,6 +23,17 @@ Inteligentny agent badawczy wykorzystujący OpenAI API, web search (Tavily), RAG
 ✅ **Research History** - Pełna historia przeprowadzonych badań  
 ✅ **RESTful API** - Nowoczesne API oparte na FastAPI  
 
+### 🚀 Production Enhancements (NEW!)
+
+✅ **Retry Logic** - Automatyczne ponowienie prób z exponential backoff (3 próby)  
+✅ **Caching** - In-memory cache z 1-godzinnym TTL dla wyników wyszukiwania  
+✅ **Advanced Logging** - RotatingFileHandler (10MB max, 5 backups)  
+✅ **Error Handling** - Zaawansowana obsługa błędów z pełnym logowaniem  
+✅ **Analysis Depth** - 5 poziomów głębokości analizy (od szybkiego przeglądu do deep dive)  
+✅ **Response Validation** - Walidacja odpowiedzi z confidence scoring  
+
+📖 **[Pełna dokumentacja production enhancements →](./PRODUCTION_ENHANCEMENTS.md)**  
+
 ## 🛠 Stack Technologiczny
 
 | Technologia | Wersja | Przeznaczenie |
@@ -35,6 +46,7 @@ Inteligentny agent badawczy wykorzystujący OpenAI API, web search (Tavily), RAG
 | **ReportLab** | 4.0.9 | Generowanie PDF |
 | **Uvicorn** | 0.27.0 | ASGI server |
 | **Pydantic** | 2.10.5 | Walidacja danych |
+| **Tenacity** | 9.0.0 | Retry logic (NEW) |
 
 ## 📁 Struktura Projektu
 
