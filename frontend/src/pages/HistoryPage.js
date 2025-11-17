@@ -16,7 +16,7 @@ const HistoryPage = () => {
 
   const fetchHistory = async () => {
     try {
-      const response = await axios.get('/history?limit=50');
+      const response = await axios.get('http://localhost:8000/history?limit=50');
       setHistory(response.data.research);
       setIsLoading(false);
     } catch (err) {

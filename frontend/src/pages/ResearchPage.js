@@ -15,7 +15,7 @@ const ResearchPage = () => {
 
   const fetchResearch = async () => {
     try {
-      const response = await axios.get(`/research/${id}`);
+      const response = await axios.get(`http://localhost:8000/research/${id}`);
       setResearch(response.data);
       setIsLoading(false);
     } catch (err) {
@@ -32,13 +32,14 @@ const ResearchPage = () => {
   const generatePdfReport = async () => {
     setIsGeneratingPdf(true);
     try {
-      const response = await axios.post('/report', {
+      const response = await axios.post('http://localhost:8000/report', {
         research_id: id,
         include_sources: true
       });
 
-      // Download the PDF
-      window.open(response.data.download_url, '_blank');
+      // Download the PDF - fix URL to include full backend address
+      const downloadUrl = `http://localhost:8000${response.data.download_url}`;
+      window.open(downloadUrl, '_blank');
     } catch (err) {
       alert('Failed to generate PDF report');
     } finally {

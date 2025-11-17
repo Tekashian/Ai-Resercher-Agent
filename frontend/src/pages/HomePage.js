@@ -10,6 +10,7 @@ const HomePage = () => {
   const [maxResults, setMaxResults] = useState(10);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [progressStatus, setProgressStatus] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -18,18 +19,29 @@ const HomePage = () => {
 
     setIsLoading(true);
     setError(null);
+    setProgressStatus('🔍 Initializing research...');
 
     try {
-      const response = await axios.post('/research', {
+      // Simulate progress updates
+      setTimeout(() => setProgressStatus('🌐 Searching web sources...'), 1000);
+      setTimeout(() => setProgressStatus('📊 Collecting data from ' + maxResults + ' sources...'), 3000);
+      setTimeout(() => setProgressStatus('🤖 AI analyzing findings...'), 8000);
+      setTimeout(() => setProgressStatus('📝 Generating comprehensive report...'), 15000);
+      setTimeout(() => setProgressStatus('✨ Finalizing world-class analysis...'), 25000);
+
+      const response = await axios.post('http://localhost:8000/research', {
         topic: topic.trim(),
         max_results: maxResults
       });
 
-      // Navigate to research detail page
-      navigate(`/research/${response.data.research_id}`);
+      setProgressStatus('✅ Complete! Redirecting...');
+      setTimeout(() => {
+        navigate(`/research/${response.data.research_id}`);
+      }, 500);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to start research. Please try again.');
       setIsLoading(false);
+      setProgressStatus('');
     }
   };
 
@@ -122,6 +134,8 @@ const HomePage = () => {
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               disabled={isLoading}
+              autoComplete="off"
+              autoFocus
             />
             <div className="search-controls">
               <select
@@ -158,6 +172,16 @@ const HomePage = () => {
             )}
           </motion.button>
         </motion.form>
+
+        {progressStatus && (
+          <motion.div 
+            className="progress-status"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            {progressStatus}
+          </motion.div>
+        )}
 
         {error && (
           <motion.div 

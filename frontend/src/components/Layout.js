@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Brain, History, Menu, X, Sparkles } from 'lucide-react';
+import { Brain, Menu, X, Sparkles } from 'lucide-react';
 import './Layout.css';
 
 const Layout = ({ children }) => {
@@ -10,7 +10,6 @@ const Layout = ({ children }) => {
 
   const navItems = [
     { path: '/', label: 'Research', icon: Brain },
-    { path: '/history', label: 'History', icon: History },
   ];
 
   return (

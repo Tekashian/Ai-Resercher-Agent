@@ -3,6 +3,7 @@ import json
 import logging
 from typing import Optional, Dict, List
 import google.generativeai as genai
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from config.settings import settings
 
@@ -42,33 +43,81 @@ class AIAgent:
             # Adjust prompt based on depth
             depth_instructions = self._get_depth_instructions(depth)
             
-            system_prompt = f"""You are a world-class research analyst with expertise across multiple domains.
+            system_prompt = f"""# ROLE & EXPERTISE
+You are Dr. Alexandra Chen, Chief Strategy Officer at McKinsey & Company with 20+ years leading Fortune 500 transformations. PhD in Economics (MIT), former Goldman Sachs Managing Director, advisor to 3 unicorn startups. Your reports have guided $50B+ in strategic decisions.
 
-Your analysis must be:
-- Comprehensive and fact-based
-- Well-structured with clear sections
-- Academic yet accessible
-- Backed by the provided sources
+# CONTEXT
+Client: C-suite executive team requiring actionable intelligence
+Deliverable: Board-level strategic research report
+Budget: $2M+ consulting engagement
+Timeline: Immediate decision-making required
+Stakes: Multi-million dollar implications
 
-{depth_instructions}
+# OBJECTIVE
+Produce a comprehensive strategic analysis that:
+1. Provides executive summary with clear recommendations
+2. Identifies 8 critical insights with quantifiable impact
+3. Maps competitive landscape and market dynamics
+4. Assesses risks with mitigation strategies
+5. Delivers implementation roadmap with success metrics
+6. Projects financial implications and ROI
+7. Forecasts 3-5 year trends and disruption scenarios
+8. Analyzes stakeholder impact across the value chain
 
-Response Format (JSON):
+# CONSTRAINTS
+- Output: STRICT JSON only (no markdown, no code blocks)
+- Length: Comprehensive yet concise (board attention span)
+- Tone: Executive-level (authoritative, data-driven, actionable)
+- Quality: McKinsey Quarterly publication standard
+- Accuracy: Every claim must be defensible with sources
+
+# OUTPUT FORMAT (STRICT JSON)
 {{
-  "summary": "Comprehensive 2-4 paragraph summary",
-  "key_findings": ["Finding 1", "Finding 2", "Finding 3", "Finding 4", "Finding 5"],
+  "summary": "4-6 paragraph executive brief covering: (1) Strategic overview and market context, (2) Core value proposition and competitive positioning, (3) Critical risks and opportunities with probability assessment, (4) Key recommendations with expected ROI and timeline",
+  "key_findings": [
+    "Finding 1: Market size and growth trajectory with TAM/SAM/SOM breakdown",
+    "Finding 2: Competitive dynamics showing market share, pricing power, and barriers to entry",
+    "Finding 3: Technology trends and innovation cycles affecting the space",
+    "Finding 4: Regulatory landscape and compliance requirements",
+    "Finding 5: Financial metrics including unit economics and profitability drivers",
+    "Finding 6: Customer segments, pain points, and willingness to pay",
+    "Finding 7: Supply chain and operational considerations",
+    "Finding 8: Strategic partnerships and ecosystem dependencies"
+  ],
   "detailed_analysis": {{
-    "introduction": "Context and background",
-    "main_insights": "Core findings and analysis",
-    "implications": "Practical implications and applications",
-    "future_outlook": "Trends and future directions"
+    "executive_overview": "Set strategic context in 3-4 paragraphs: macro trends, market structure, key players, regulatory environment, and why this matters now",
+    "market_analysis": "Deep dive in 4-5 paragraphs: market sizing (TAM/SAM/SOM), growth drivers, adoption curves, pricing dynamics, customer segments, distribution channels",
+    "strategic_insights": "Core findings in 4-5 paragraphs: competitive positioning, differentiation opportunities, value chain analysis, strategic partnerships, M&A landscape",
+    "risk_assessment": "Comprehensive risk matrix in 3-4 paragraphs: operational risks, market risks, technology risks, regulatory risks, financial risks - each with probability, impact, and mitigation",
+    "implementation_roadmap": "Actionable plan in 3-4 paragraphs: Phase 1 (quick wins 0-6 months), Phase 2 (scale 6-18 months), Phase 3 (optimize 18-36 months) with resources, milestones, KPIs",
+    "financial_implications": "Economic analysis in 2-3 paragraphs: investment requirements, cost structure, revenue model, break-even analysis, IRR projections, sensitivity analysis",
+    "future_outlook": "Predictive analysis in 4-5 paragraphs: 3-year trend forecast, emerging technologies, disruption scenarios (bull/base/bear cases), strategic pivots, global implications",
+    "competitive_intelligence": "Competitive landscape in 3-4 paragraphs: key player profiles, market positioning matrix, SWOT analysis, strategic moves, threats and opportunities"
   }},
   "confidence_score": 0.95,
   "sources_used": 10
 }}
-"""
+
+{depth_instructions}
+
+# QUALITY STANDARDS
+✓ Every paragraph must provide actionable insights
+✓ Use specific numbers, percentages, timeframes
+✓ Reference concrete examples and case studies
+✓ Avoid jargon unless defined
+✓ Structure with clear topic sentences
+✓ Connect insights to business impact
+✓ Anticipate executive questions
+
+# JSON SAFETY
+⚠ Use only straight quotes (no curly quotes)
+⚠ Escape special characters: \\" \\\\ \\n \\t
+⚠ No line breaks within string values
+⚠ Keep each paragraph as single continuous text
+⚠ Test JSON validity before output"""
             
-            # Truncate context if too long (OpenAI token limit consideration)
-            max_context_length = 6000
+            # Increase context limit for ultra-detailed reports
+            max_context_length = 15000  # Increased from 6000 for world-class analysis
             if context and len(context) > max_context_length:
                 logger.warning(f"Context truncated from {len(context)} to {max_context_length} chars")
                 context = context[:max_context_length] + "\n\n[Context truncated for length...]"
@@ -87,17 +136,35 @@ Provide a comprehensive analysis following the JSON structure specified."""
 
 {user_prompt}"""
             
-            # Generate response using Gemini
+            # Generate response using Gemini with higher token limit for detailed reports
             response = self.model.generate_content(
                 full_prompt,
                 generation_config=genai.GenerationConfig(
-                    temperature=0.7,
-                    max_output_tokens=3000,
+                    temperature=0.5,  # Reduced for more stable JSON
+                    max_output_tokens=6000,  # Reduced from 8000 for safety
                     response_mime_type="application/json"
-                )
+                ),
+                safety_settings={
+                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+                }
             )
             
-            result = json.loads(response.text)
+            # Check if response was blocked
+            if not response.text or response.text.strip() == "":
+                logger.error(f"Empty response from Gemini. Finish reason: {response.candidates[0].finish_reason if response.candidates else 'Unknown'}")
+                raise Exception("AI returned empty response. Try reducing context length or simplifying the query.")
+            
+            # Clean and parse response
+            response_text = response.text.strip()
+            
+            # Try to fix common JSON issues
+            if response_text.startswith('```json'):
+                response_text = response_text.replace('```json', '').replace('```', '').strip()
+            
+            result = json.loads(response_text)
             
             # Validate and enrich response
             result = self._validate_and_enrich_analysis(result, topic)
@@ -107,6 +174,21 @@ Provide a comprehensive analysis following the JSON structure specified."""
             
         except json.JSONDecodeError as e:
             logger.error(f"JSON decode error in AI response: {str(e)}")
+            logger.error(f"Response preview: {response.text[:500]}...")
+            
+            # Try alternative parsing - extract JSON from markdown code blocks
+            try:
+                import re
+                json_match = re.search(r'\{[\s\S]*\}', response.text)
+                if json_match:
+                    logger.info("Attempting to extract JSON from response...")
+                    result = json.loads(json_match.group(0))
+                    result = self._validate_and_enrich_analysis(result, topic)
+                    logger.info(f"Successfully recovered from JSON error for: {topic[:50]}...")
+                    return result
+            except:
+                pass
+            
             raise Exception(f"AI returned invalid JSON: {str(e)}")
         except Exception as e:
             logger.error(f"AI analysis failed: {str(e)}")
