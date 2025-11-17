@@ -1,9 +1,13 @@
 import os
+import logging
 import chromadb
 from chromadb.config import Settings as ChromaSettings
 from typing import List, Dict, Optional
 from datetime import datetime
 from config.settings import settings
+
+# Initialize logger
+logger = logging.getLogger(__name__)
 
 
 class VectorStore:
@@ -12,6 +16,8 @@ class VectorStore:
     def __init__(self):
         # Ensure directory exists
         os.makedirs(settings.CHROMA_DB_PATH, exist_ok=True)
+        
+        logger.info(f"Initializing ChromaDB at: {settings.CHROMA_DB_PATH}")
         
         # Initialize ChromaDB client
         self.client = chromadb.PersistentClient(
@@ -27,6 +33,8 @@ class VectorStore:
             name="research_data",
             metadata={"description": "AI Research Agent storage"}
         )
+        
+        logger.info(f"ChromaDB collection 'research_data' initialized (count: {self.collection.count()})")
     
     async def store_research(self, research_id: str, research_data: dict) -> bool:
         """
@@ -40,6 +48,8 @@ class VectorStore:
             Success boolean
         """
         try:
+            logger.debug(f"Storing research: {research_id}")
+            
             # Prepare document for storage
             document = self._prepare_document(research_data)
             
@@ -55,9 +65,11 @@ class VectorStore:
                 }]
             )
             
+            logger.info(f"Successfully stored research: {research_id} (collection size: {self.collection.count()})")
             return True
             
         except Exception as e:
+            logger.error(f"Failed to store research {research_id}: {str(e)}", exc_info=True)
             raise Exception(f"Failed to store research: {str(e)}")
     
     async def get_research(self, research_id: str) -> Optional[Dict]:

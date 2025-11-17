@@ -1,4 +1,5 @@
 import os
+import logging
 from datetime import datetime
 from typing import Dict, Optional
 from reportlab.lib.pagesizes import letter, A4
@@ -10,6 +11,9 @@ from reportlab.platypus import Table, TableStyle
 from reportlab.lib import colors
 from config.settings import settings
 
+# Initialize logger
+logger = logging.getLogger(__name__)
+
 
 class PDFGenerator:
     """PDF report generator using ReportLab"""
@@ -17,8 +21,11 @@ class PDFGenerator:
     def __init__(self):
         # Ensure reports directory exists
         os.makedirs(settings.REPORTS_PATH, exist_ok=True)
+        logger.info(f"PDFGenerator initialized with reports path: {settings.REPORTS_PATH}")
+        
         self.styles = getSampleStyleSheet()
         self._setup_custom_styles()
+        logger.debug("Custom PDF styles configured")
     
     def _setup_custom_styles(self):
         """Setup custom paragraph styles"""
@@ -72,9 +79,13 @@ class PDFGenerator:
             Path to generated PDF file
         """
         try:
+            logger.info(f"Generating PDF report: {report_id}")
+            
             # Create filename
             filename = f"report_{report_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
             filepath = os.path.join(settings.REPORTS_PATH, filename)
+            
+            logger.debug(f"PDF filepath: {filepath}")
             
             # Create PDF document
             doc = SimpleDocTemplate(
@@ -140,16 +151,22 @@ class PDFGenerator:
                 if sources:
                     story.append(PageBreak())
                     story.append(Paragraph("Sources & References", self.styles['SectionHeader']))
+                    logger.debug(f"Adding {len(sources)} sources to PDF")
                     for idx, source in enumerate(sources, 1):
                         source_text = f"{idx}. {source}"
                         story.append(Paragraph(source_text, self.styles['CustomBody']))
             
             # Build PDF
+            logger.debug("Building PDF document...")
             doc.build(story)
+            
+            file_size = os.path.getsize(filepath)
+            logger.info(f"PDF generated successfully: {filename} ({file_size} bytes)")
             
             return filepath
             
         except Exception as e:
+            logger.error(f"PDF generation failed for {report_id}: {str(e)}", exc_info=True)
             raise Exception(f"PDF generation failed: {str(e)}")
 
 
