@@ -2,7 +2,7 @@ import os
 import json
 import logging
 from typing import Optional, Dict, List
-from openai import OpenAI
+import google.generativeai as genai
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from config.settings import settings
 
@@ -11,12 +11,12 @@ logger = logging.getLogger(__name__)
 
 
 class AIAgent:
-    """AI Agent using OpenAI API for research and analysis"""
+    """AI Agent using Google Gemini API for research and analysis"""
     
     def __init__(self):
-        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
-        self.model = settings.OPENAI_MODEL
-        logger.info(f"AIAgent initialized with model: {self.model}")
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        self.model = genai.GenerativeModel(settings.GEMINI_MODEL)
+        logger.info(f"AIAgent initialized with model: {settings.GEMINI_MODEL}")
     
     @retry(
         stop=stop_after_attempt(3),
@@ -80,21 +80,24 @@ Web Search Context:
 
 Provide a comprehensive analysis following the JSON structure specified."""
             
-            logger.debug(f"Sending request to OpenAI model: {self.model}")
+            logger.debug(f"Sending request to Gemini model: {settings.GEMINI_MODEL}")
             
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                temperature=0.7,
-                max_tokens=3000,
-                response_format={"type": "json_object"},
-                timeout=60
+            # Combine prompts for Gemini
+            full_prompt = f"""{system_prompt}
+
+{user_prompt}"""
+            
+            # Generate response using Gemini
+            response = self.model.generate_content(
+                full_prompt,
+                generation_config=genai.GenerationConfig(
+                    temperature=0.7,
+                    max_output_tokens=3000,
+                    response_mime_type="application/json"
+                )
             )
             
-            result = json.loads(response.choices[0].message.content)
+            result = json.loads(response.text)
             
             # Validate and enrich response
             result = self._validate_and_enrich_analysis(result, topic)
@@ -137,7 +140,7 @@ Provide a comprehensive analysis following the JSON structure specified."""
         # Add metadata
         result["metadata"] = {
             "topic": topic,
-            "model_used": self.model,
+            "model_used": settings.GEMINI_MODEL,
             "analysis_version": "1.0"
         }
         
@@ -154,34 +157,30 @@ Provide a comprehensive analysis following the JSON structure specified."""
             dict with report structure
         """
         try:
-            system_prompt = """You are a report structuring expert. Create a professional report outline with:
+            prompt = f"""You are a report structuring expert. Create a professional report outline with:
 - Title
 - Executive Summary
 - Main Sections (3-5 sections with subsections)
 - Conclusion
 - Key Takeaways
 
-Format as JSON with clear hierarchy."""
-            
-            user_prompt = f"""Create a report structure for:
+Create a report structure for:
 Topic: {research_data.get('topic', 'N/A')}
 Summary: {research_data.get('summary', 'N/A')}
 Key Findings: {research_data.get('key_findings', [])}
-"""
+
+Format as JSON with clear hierarchy."""
             
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                temperature=0.5,
-                max_tokens=1500,
-                response_format={"type": "json_object"}
+            response = self.model.generate_content(
+                prompt,
+                generation_config=genai.GenerationConfig(
+                    temperature=0.5,
+                    max_output_tokens=1500,
+                    response_mime_type="application/json"
+                )
             )
             
-            import json
-            result = json.loads(response.choices[0].message.content)
+            result = json.loads(response.text)
             return result
             
         except Exception as e:
@@ -199,17 +198,22 @@ Key Findings: {research_data.get('key_findings', [])}
             Refined content
         """
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are a content refinement expert."},
-                    {"role": "user", "content": f"{instruction}\n\nContent:\n{content}"}
-                ],
-                temperature=0.6,
-                max_tokens=1000
+            prompt = f"""You are a content refinement expert.
+
+{instruction}
+
+Content:
+{content}"""
+            
+            response = self.model.generate_content(
+                prompt,
+                generation_config=genai.GenerationConfig(
+                    temperature=0.6,
+                    max_output_tokens=1000
+                )
             )
             
-            return response.choices[0].message.content
+            return response.text
             
         except Exception as e:
             raise Exception(f"Content refinement failed: {str(e)}")

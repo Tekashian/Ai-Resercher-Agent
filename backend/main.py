@@ -65,7 +65,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"🚀 Starting {settings.APP_NAME} v{settings.APP_VERSION}")
     logger.info(f"📊 ChromaDB path: {settings.CHROMA_DB_PATH}")
     logger.info(f"📄 Reports path: {settings.REPORTS_PATH}")
-    logger.info(f"🤖 OpenAI Model: {settings.OPENAI_MODEL}")
+    logger.info(f"🤖 AI Model: {settings.GEMINI_MODEL}")
     logger.info(f"🔍 Max Search Results: {settings.MAX_SEARCH_RESULTS}")
     logger.info("=" * 60)
     
@@ -136,7 +136,7 @@ async def conduct_research(
     
     This endpoint:
     1. Performs web search using Tavily
-    2. Analyzes content using OpenAI
+    2. Analyzes content using Google Gemini AI
     3. Stores results in vector database
     4. Returns structured research data
     """
@@ -163,7 +163,7 @@ async def conduct_research(
         logger.info(f"     ✓ Context extracted: {len(context)} chars")
         
         # Step 2: AI analysis
-        logger.info(f"  └─ Step 2/3: Analyzing with AI (model: {settings.OPENAI_MODEL})...")
+        logger.info(f"  └─ Step 2/3: Analyzing with AI (model: {settings.GEMINI_MODEL})...")
         analysis = await agent.analyze_topic(
             topic=request.topic,
             context=context

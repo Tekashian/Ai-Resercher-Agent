@@ -1,6 +1,6 @@
 # 🧠 AI Research Agent
 
-Inteligentny agent badawczy wykorzystujący OpenAI API, web search (Tavily), RAG (ChromaDB) i automatyczne generowanie raportów PDF.
+Inteligentny agent badawczy wykorzystujący Google Gemini 2.5 Flash, web search (Tavily), RAG (ChromaDB) i automatyczne generowanie raportów PDF.
 
 ## 📋 Spis treści
 
@@ -17,7 +17,7 @@ Inteligentny agent badawczy wykorzystujący OpenAI API, web search (Tavily), RAG
 ## ✨ Funkcjonalności
 
 ✅ **Web Research** - Automatyczne wyszukiwanie informacji w internecie (Tavily API)  
-✅ **AI Analysis** - Analiza i przetwarzanie danych przez OpenAI GPT-4  
+✅ **AI Analysis** - Analiza i przetwarzanie danych przez Google Gemini 2.0 Flash  
 ✅ **RAG System** - Przechowywanie wyników w bazie wektorowej (ChromaDB)  
 ✅ **PDF Reports** - Automatyczne generowanie profesjonalnych raportów PDF  
 ✅ **Research History** - Pełna historia przeprowadzonych badań  
@@ -40,7 +40,7 @@ Inteligentny agent badawczy wykorzystujący OpenAI API, web search (Tavily), RAG
 |------------|---------|---------------|
 | **Python** | 3.11+ | Język programowania |
 | **FastAPI** | 0.109.0 | Backend API framework |
-| **OpenAI API** | 1.10.0 | Inteligencja AI (GPT-4) |
+| **Google Gemini** | 2.5 Flash | Inteligencja AI |
 | **Tavily** | 0.3.0 | Web search engine |
 | **ChromaDB** | 0.4.22 | Vector database (RAG) |
 | **ReportLab** | 4.0.9 | Generowanie PDF |
@@ -58,7 +58,7 @@ Ai-Resercher-Agent-python/
 │       ├── models/
 │       │   └── schemas.py      # Pydantic models
 │       ├── services/
-│       │   ├── agent.py        # OpenAI Agent
+│       │   ├── agent.py        # Google Gemini Agent
 │       │   ├── search.py       # Tavily Web Search
 │       │   ├── vector_store.py # ChromaDB integration
 │       │   └── pdf_generator.py # ReportLab PDF generation
@@ -118,9 +118,9 @@ Copy-Item .env.example .env
 Edytuj `.env` i dodaj swoje klucze API:
 
 ```env
-# OpenAI API Configuration
-OPENAI_API_KEY=sk-your-openai-api-key-here
-OPENAI_MODEL=gpt-4-turbo-preview
+# Google Gemini API Configuration
+GEMINI_API_KEY=AIzaSy...your-gemini-api-key-here
+GEMINI_MODEL=gemini-2.5-flash
 
 # Tavily API Configuration
 TAVILY_API_KEY=tvly-your-tavily-api-key-here

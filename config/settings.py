@@ -5,9 +5,9 @@ from typing import Optional
 class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
     
-    # OpenAI
-    OPENAI_API_KEY: str
-    OPENAI_MODEL: str = "gpt-4-turbo-preview"
+    # Google Gemini
+    GEMINI_API_KEY: str
+    GEMINI_MODEL: str = "gemini-2.5-flash"
     
     # Tavily
     TAVILY_API_KEY: str
