@@ -62,11 +62,11 @@ async def lifespan(app: FastAPI):
     """Lifespan events for FastAPI app"""
     # Startup
     logger.info("=" * 60)
-    logger.info(f"🚀 Starting {settings.APP_NAME} v{settings.APP_VERSION}")
-    logger.info(f"📊 ChromaDB path: {settings.CHROMA_DB_PATH}")
-    logger.info(f"📄 Reports path: {settings.REPORTS_PATH}")
-    logger.info(f"🤖 AI Model: {settings.GEMINI_MODEL}")
-    logger.info(f"🔍 Max Search Results: {settings.MAX_SEARCH_RESULTS}")
+    logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
+    logger.info(f"ChromaDB path: {settings.CHROMA_DB_PATH}")
+    logger.info(f"Reports path: {settings.REPORTS_PATH}")
+    logger.info(f"AI Model: {settings.GEMINI_MODEL}")
+    logger.info(f"Max Search Results: {settings.MAX_SEARCH_RESULTS}")
     logger.info("=" * 60)
     
     # Ensure directories exist
@@ -74,12 +74,12 @@ async def lifespan(app: FastAPI):
     os.makedirs(settings.REPORTS_PATH, exist_ok=True)
     os.makedirs("logs", exist_ok=True)
     
-    logger.info("✅ All directories initialized")
+    logger.info("[OK] All directories initialized")
     
     yield
     
     # Shutdown
-    logger.info("👋 Shutting down AI Research Agent")
+    logger.info("Shutting down AI Research Agent")
     logger.info("=" * 60)
 
 
@@ -144,31 +144,31 @@ async def conduct_research(
         # Generate unique research ID
         research_id = f"res_{uuid.uuid4().hex[:12]}"
         
-        logger.info(f"🔍 Starting research: {research_id} - Topic: '{request.topic}' (max_results: {request.max_results})")
+        logger.info(f"[RESEARCH] Starting research: {research_id} - Topic: '{request.topic}' (max_results: {request.max_results})")
         start_time = datetime.now()
         
         # Step 1: Web search
-        logger.info(f"  └─ Step 1/3: Searching web (max {request.max_results} results)...")
+        logger.info(f"  [1/3] Searching web (max {request.max_results} results)...")
         search_results = await search_service.search(
             query=request.topic,
             max_results=request.max_results
         )
-        logger.info(f"     ✓ Found {len(search_results)} results")
+        logger.info(f"  [OK] Found {len(search_results)} results")
         
         # Get context from search results
         context = await search_service.get_context(
             query=request.topic,
             max_results=request.max_results
         )
-        logger.info(f"     ✓ Context extracted: {len(context)} chars")
+        logger.info(f"  [OK] Context extracted: {len(context)} chars")
         
         # Step 2: AI analysis
-        logger.info(f"  └─ Step 2/3: Analyzing with AI (model: {settings.GEMINI_MODEL})...")
+        logger.info(f"  [2/3] Analyzing with AI (model: {settings.GEMINI_MODEL})...")
         analysis = await agent.analyze_topic(
             topic=request.topic,
             context=context
         )
-        logger.info(f"     ✓ Analysis complete (confidence: {analysis.get('confidence_score', 'N/A')})")
+        logger.info(f"  [OK] Analysis complete (confidence: {analysis.get('confidence_score', 'N/A')})")
         
         # Extract sources
         sources = [result.url for result in search_results]
@@ -188,11 +188,11 @@ async def conduct_research(
         }
         
         # Step 3: Store in vector database
-        logger.info(f"  └─ Step 3/3: Storing in ChromaDB (ID: {research_id})...")
+        logger.info(f"  [3/3] Storing in ChromaDB (ID: {research_id})...")
         await vector_store.store_research(research_id, research_data)
         
         duration = (datetime.now() - start_time).total_seconds()
-        logger.info(f"✅ Research completed successfully: {research_id} (duration: {duration:.2f}s)")
+        logger.info(f"[SUCCESS] Research completed successfully: {research_id} (duration: {duration:.2f}s)")
         
         # Return response
         return ResearchResponse(
@@ -206,7 +206,7 @@ async def conduct_research(
         )
         
     except Exception as e:
-        logger.error(f"❌ Research failed for topic '{request.topic}': {str(e)}", exc_info=True)
+        logger.error(f"[ERROR] Research failed for topic '{request.topic}': {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Research failed: {str(e)}")
 
 
@@ -221,27 +221,27 @@ async def generate_report(request: ReportRequest):
     3. Returns download URL
     """
     try:
-        logger.info(f"📄 Generating report for research: {request.research_id}")
+        logger.info(f"[REPORT] Generating report for research: {request.research_id}")
         start_time = datetime.now()
         
         # Retrieve research data
-        logger.info(f"  └─ Retrieving research data from ChromaDB...")
+        logger.info(f"  Retrieving research data from ChromaDB...")
         research_data = await vector_store.get_research(request.research_id)
         
         if not research_data:
-            logger.warning(f"  ⚠️ Research not found: {request.research_id}")
+            logger.warning(f"  [WARNING] Research not found: {request.research_id}")
             raise HTTPException(
                 status_code=404,
                 detail=f"Research not found: {request.research_id}"
             )
         
-        logger.info(f"     ✓ Research data retrieved")
+        logger.info(f"  [OK] Research data retrieved")
         
         # Generate report ID
         report_id = f"rpt_{uuid.uuid4().hex[:12]}"
         
         # Generate PDF
-        logger.info(f"  └─ Generating PDF with ReportLab (ID: {report_id})...")
+        logger.info(f"  Generating PDF with ReportLab (ID: {report_id})...")
         pdf_path = await pdf_generator.generate_report(
             research_data={
                 **research_data['metadata'],
@@ -260,7 +260,7 @@ async def generate_report(request: ReportRequest):
         download_url = f"/download/{filename}"
         
         duration = (datetime.now() - start_time).total_seconds()
-        logger.info(f"✅ Report generated successfully: {report_id} ({filename}) (duration: {duration:.2f}s)")
+        logger.info(f"[SUCCESS] Report generated successfully: {report_id} ({filename}) (duration: {duration:.2f}s)")
         
         return ReportResponse(
             report_id=report_id,
@@ -273,7 +273,7 @@ async def generate_report(request: ReportRequest):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ Report generation failed for {request.research_id}: {str(e)}", exc_info=True)
+        logger.error(f"[ERROR] Report generation failed for {request.research_id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
 
 
@@ -285,11 +285,11 @@ async def get_research_history(limit: int = 10):
     Returns list of recent research with metadata
     """
     try:
-        logger.info(f"📜 Retrieving research history (limit: {limit})")
+        logger.info(f"[HISTORY] Retrieving research history (limit: {limit})")
         
         history = await vector_store.get_all_research(limit=limit)
         
-        logger.info(f"✅ Retrieved {len(history)} research items")
+        logger.info(f"[SUCCESS] Retrieved {len(history)} research items")
         
         return {
             "count": len(history),
@@ -298,7 +298,7 @@ async def get_research_history(limit: int = 10):
         }
         
     except Exception as e:
-        logger.error(f"❌ Failed to retrieve history: {str(e)}", exc_info=True)
+        logger.error(f"[ERROR] Failed to retrieve history: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to retrieve history: {str(e)}")
 
 
@@ -306,25 +306,25 @@ async def get_research_history(limit: int = 10):
 async def get_research_details(research_id: str):
     """Get detailed information about specific research"""
     try:
-        logger.info(f"📖 Retrieving research details for: {research_id}")
+        logger.info(f"[DETAILS] Retrieving research details for: {research_id}")
         
         research_data = await vector_store.get_research(research_id)
         
         if not research_data:
-            logger.warning(f"  ⚠️ Research not found: {research_id}")
+            logger.warning(f"  [WARNING] Research not found: {research_id}")
             raise HTTPException(
                 status_code=404,
                 detail=f"Research not found: {research_id}"
             )
         
-        logger.info(f"✅ Research details retrieved: {research_id}")
+        logger.info(f"[SUCCESS] Research details retrieved: {research_id}")
         
         return research_data
         
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ Failed to retrieve research {research_id}: {str(e)}", exc_info=True)
+        logger.error(f"[ERROR] Failed to retrieve research {research_id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to retrieve research: {str(e)}")
 
 
@@ -332,16 +332,16 @@ async def get_research_details(research_id: str):
 async def download_report(filename: str):
     """Download generated PDF report"""
     try:
-        logger.info(f"⬇️ Download requested: {filename}")
+        logger.info(f"[DOWNLOAD] Download requested: {filename}")
         
         file_path = os.path.join(settings.REPORTS_PATH, filename)
         
         if not os.path.exists(file_path):
-            logger.warning(f"  ⚠️ File not found: {filename}")
+            logger.warning(f"  [WARNING] File not found: {filename}")
             raise HTTPException(status_code=404, detail="Report not found")
         
         file_size = os.path.getsize(file_path)
-        logger.info(f"✅ Serving file: {filename} ({file_size} bytes)")
+        logger.info(f"[SUCCESS] Serving file: {filename} ({file_size} bytes)")
         
         return FileResponse(
             path=file_path,
@@ -352,7 +352,7 @@ async def download_report(filename: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ Download failed for {filename}: {str(e)}", exc_info=True)
+        logger.error(f"[ERROR] Download failed for {filename}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Download failed: {str(e)}")
 
 
@@ -360,11 +360,11 @@ async def download_report(filename: str):
 async def search_research(query: str, limit: int = 5):
     """Search for similar research by query"""
     try:
-        logger.info(f"🔎 Searching similar research: '{query}' (limit: {limit})")
+        logger.info(f"[SEARCH] Searching similar research: '{query}' (limit: {limit})")
         
         results = await vector_store.search_similar(query, n_results=limit)
         
-        logger.info(f"✅ Found {len(results)} similar research items")
+        logger.info(f"[SUCCESS] Found {len(results)} similar research items")
         
         return {
             "query": query,
@@ -373,7 +373,7 @@ async def search_research(query: str, limit: int = 5):
         }
         
     except Exception as e:
-        logger.error(f"❌ Search failed for query '{query}': {str(e)}", exc_info=True)
+        logger.error(f"[ERROR] Search failed for query '{query}': {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
 

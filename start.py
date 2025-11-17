@@ -16,20 +16,20 @@ def check_env_file():
             shutil.copy('.env.example', '.env')
             print("✅ .env file created")
             print("\n⚠️  IMPORTANT: Edit .env and add your API keys:")
-            print("   - OPENAI_API_KEY")
+            print("   - GEMINI_API_KEY")
             print("   - TAVILY_API_KEY")
             return False
     
     # Check if keys are set
     with open('.env', 'r') as f:
         content = f.read()
-        if 'OPENAI_API_KEY=' in content and not 'OPENAI_API_KEY=\n' in content:
-            if 'TAVILY_API_KEY=' in content and not 'TAVILY_API_KEY=\n' in content:
+        if 'GEMINI_API_KEY=' in content and 'GEMINI_API_KEY=your_gemini_api_key_here' not in content:
+            if 'TAVILY_API_KEY=' in content:
                 return True
     
     print("⚠️  API keys not configured in .env file")
     print("Please add your API keys to .env:")
-    print("   - OPENAI_API_KEY=your_openai_key")
+    print("   - GEMINI_API_KEY=your_gemini_key")
     print("   - TAVILY_API_KEY=your_tavily_key")
     return False
 
